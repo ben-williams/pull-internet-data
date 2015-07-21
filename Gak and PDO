@@ -4,7 +4,7 @@ author: "Ben Williams"
 output: html_document
 ---
 
- Go to the website and examine the format of the data. Looking at the GAK1 transect data http://www.ims.uaf.edu/gak1/data/TimeSeries/gak1.dat we see a number of things: it is a .dat file so the values are numeric, not factors and the first three rows can be skipped for data import reasons. The data columns are complete and there are no comments below the data.
+ Go to website and examine the format of the data. Looking at the GAK1 transect data http://www.ims.uaf.edu/gak1/data/TimeSeries/gak1.dat we see a number of things: it is a .dat file so the values are numeric, not factors and the first three rows can be skipped for data import reasons. The data columns are complete and there are no comments below the data.
 
 Use "scan" to pull in the data 
 
@@ -43,7 +43,7 @@ ggplot(gak1, aes(Year, temp, group=depth, color=factor(depth)))+geom_jitter()+st
 The initial setup is quite similar: 1) look at the data website http://margaret.atmos.washington.edu/pdo/PDO.latest 
 We can see that the first 29 lines need to be skipped.
 ```{r, eval=FALSE}
- pdo <- read.table('http://margaret.atmos.washington.edu/pdo/PDO.latest',skip=29)
+ pdo <- read.table('http://research.jisao.washington.edu/pdo/PDO.latest',skip=29)
 ```
 
 This input fails with 
@@ -55,7 +55,7 @@ because read.table as set is looking for a consistent number of columns to fill 
 
 This can be addressed by including a fill argument.
 ```{r}
-pdo <- read.table('http://margaret.atmos.washington.edu/pdo/PDO.latest',skip=29,fill=TRUE)
+pdo <- read.table('http://research.jisao.washington.edu/pdo/PDO.latest',skip=29,fill=TRUE)
 ```
 
 However this will create a mess at the bottom of the dataframe.
@@ -67,7 +67,7 @@ tail(pdo)
 It is easier to exclude the notes at the import by adding in the number of rows. We can also add in a header while we are at it.
 
 ```{r}
-pdo <- read.table('http://margaret.atmos.washington.edu/pdo/PDO.latest',skip=29,fill=TRUE, nrows=116,header=TRUE)
+pdo <- read.table('http://research.jisao.washington.edu/pdo/PDO.latest',skip=29,fill=TRUE, nrows=116,header=TRUE)
 ```
 
 One issue is that "YEAR" in th epdo dataframe is brought in as a factor, due to the ** comment on years 2002-2015. This comment can be removed with the gsub command, by removing punctuation from the values.
