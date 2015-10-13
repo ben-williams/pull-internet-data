@@ -40,7 +40,7 @@ ggplot(gak1, aes(Year, temp, group=depth, color=factor(depth)))+geom_jitter()+st
 
 ##Look at using read.table instead of scan
 
-The initial setup is quite similar: 1) look at the data website http://margaret.atmos.washington.edu/pdo/PDO.latest 
+The initial setup is quite similar: 1) look at the data website http://research.jisao.washington.edu/pdo/PDO.lates 
 We can see that the first 29 lines need to be skipped.
 ```{r, eval=FALSE}
  pdo <- read.table('http://research.jisao.washington.edu/pdo/PDO.latest',skip=29)
@@ -70,7 +70,7 @@ It is easier to exclude the notes at the import by adding in the number of rows.
 pdo <- read.table('http://research.jisao.washington.edu/pdo/PDO.latest',skip=29,fill=TRUE, nrows=116,header=TRUE)
 ```
 
-One issue is that "YEAR" in th epdo dataframe is brought in as a factor, due to the ** comment on years 2002-2015. This comment can be removed with the gsub command, by removing punctuation from the values.
+One issue is that "YEAR" in the PDO dataframe is brought in as a factor, due to the ** comment on years 2002-2015. This comment can be removed with the gsub command, by removing punctuation from the values.
 
 ```{r}
 pdo$YEAR <- gsub("[[:punct:]]",'' ,pdo$YEAR)
