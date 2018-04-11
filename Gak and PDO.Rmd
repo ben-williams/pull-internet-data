@@ -7,6 +7,14 @@ output: html_document
  Go to website and examine the format of the data. Looking at the GAK1 transect data http://www.ims.uaf.edu/gak1/data/TimeSeries/gak1.dat we see a number of things: it is a .dat file so the values are numeric, not factors and the first three rows can be skipped for data import reasons. The data columns are complete and there are no comments below the data.
 
 Use "scan" to pull in the data 
+```{r load}
+library(tidyverse) # viva tidyverse
+theme_set(theme_bw(base_size=12) + # themeset adjusts the background of ggplots
+             theme(panel.grid.major = element_blank(), 
+                   panel.grid.minor = element_blank()))
+library(reshape2)
+```
+
 
 ```{r}
 gak1 <- scan("http://www.ims.uaf.edu/gak1/data/TimeSeries/gak1.dat", 
@@ -15,35 +23,36 @@ gak1 <- scan("http://www.ims.uaf.edu/gak1/data/TimeSeries/gak1.dat",
 
 Structure the lists as a dataframe and name them
 ```{r}
-gak1<-data.frame(gak1)
-colnames(gak1)<-c("cruise","station","dec.year","depth","temp","sal","sigma.T","delta.D")
+gak1 <- data.frame(gak1)
+colnames(gak1)<-c("cruise", "station", "dec.year", "depth", "temp", "sal", "sigma.T", "delta.D")
 ```
 
 Structure the data
 ```{r}
-gak1$year <- gak1$dec.year - trunc(gak1$dec.year)
-gak1$month <- cut(gak1$year, seq(0,1,length=13), labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
-gak1$Year <- factor(trunc(gak1$dec.year))
+gak1 %>% 
+  mutate(year = dec.year - trunc(dec.year),
+         Month = cut(year, seq(0,1,length=13), labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")),
+         Year = factor(trunc(dec.year)),
+         Depth = factor(depth)) -> gak1
 ```
 
 Plot to your hearts desire.
 ```{r}
-library(ggplot2)
-theme_set(theme_bw(base_size=12)+ 
-             theme(panel.grid.major = element_blank(), 
-                   panel.grid.minor = element_blank()))
+ggplot(gak1, aes(Month, temp, group = Depth, color = Depth, fill = Depth)) + geom_jitter() + stat_smooth()
 
-ggplot(gak1, aes(month, temp, group=depth, color=factor(depth)))+geom_jitter()+stat_smooth()
+ggplot(gak1, aes(Year, temp, group=Depth, color = Depth, fill = Depth)) +
+  geom_jitter() + stat_smooth(alpha=.15) + scale_x_discrete(breaks = seq(1970,2015,3))
 
-ggplot(gak1, aes(Year, temp, group=depth, color=factor(depth)))+geom_jitter()+stat_smooth(alpha=.15)+scale_x_discrete(breaks=seq(1970,2015,3))
+ggplot(gak1, aes(Year, temp, group=Depth, color = Depth, fill = Depth)) +
+  stat_smooth(alpha=.15) + scale_x_discrete(breaks = seq(1970,2015,3))
 ```
 
-##Look at using read.table instead of scan
+##Uusing read.table instead of scan
 
 The initial setup is quite similar: 1) look at the data website http://research.jisao.washington.edu/pdo/PDO.lates 
 We can see that the first 29 lines need to be skipped.
 ```{r, eval=FALSE}
- pdo <- read.table('http://research.jisao.washington.edu/pdo/PDO.latest',skip=29)
+ pdo <- read.table('http://research.jisao.washington.edu/pdo/PDO.latest', skip=29)
 ```
 
 This input fails with 
@@ -51,11 +60,11 @@ This input fails with
 #Error in scan(file, what, nmax, sep, dec, quote, skip, nlines, na.strings,  : 
 #  line 117 did not have 13 elements
 ```
-because read.table as set is looking for a consistent number of columns to fill completely. Scrolling down the webpage you will see that 2015 data is incomplete and there is text below the data.
+because read.table, as set, is looking for a consistent number of columns to fill completely. Scrolling down the webpage you will see that 2015 data is incomplete and there is text below the data.
 
 This can be addressed by including a fill argument.
 ```{r}
-pdo <- read.table('http://research.jisao.washington.edu/pdo/PDO.latest',skip=29,fill=TRUE)
+pdo <- read.table('http://research.jisao.washington.edu/pdo/PDO.latest', skip=29, fill=TRUE)
 ```
 
 However this will create a mess at the bottom of the dataframe.
@@ -67,23 +76,22 @@ tail(pdo)
 It is easier to exclude the notes at the import by adding in the number of rows. We can also add in a header while we are at it.
 
 ```{r}
-pdo <- read.table('http://research.jisao.washington.edu/pdo/PDO.latest',skip=29,fill=TRUE, nrows=116,header=TRUE)
+pdo <- read.table('http://research.jisao.washington.edu/pdo/PDO.latest', skip=30, fill=TRUE,
+                  nrows=118, header=TRUE) # rows are good through 2017
 ```
 
 One issue is that "YEAR" in the PDO dataframe is brought in as a factor, due to the ** comment on years 2002-2015. This comment can be removed with the gsub command, by removing punctuation from the values.
+Now we can plot, but first it may help to reshape the dataframe.
 
 ```{r}
-pdo$YEAR <- gsub("[[:punct:]]",'' ,pdo$YEAR)
-```
+pdo %>% 
+  mutate(YEAR = gsub("[[:punct:]]", '', YEAR)) %>% 
+  gather(MONTH, value, -YEAR) %>% # transform from wide to long
+  rename(year = YEAR) %>% # change some names
+  mutate(Month = factor(MONTH, levels = c("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"))) %>% # define factor levels for appropriate order in the figure
+  ggplot(aes(year, value, color = Month, group=Month)) +
+    geom_point() + geom_line() + scale_x_discrete(breaks=seq(1900,2015,10))
 
-Now we can plot, but first it may help to melt the dataframe.
-
-```{r}
-library(reshape2)
-mpdo <- melt(pdo)  
-names(mpdo) <-c("year", 'month', 'value')
-
-ggplot(mpdo, aes(year,value, color=month, group=month))+geom_point()+geom_line()+scale_x_discrete(breaks=seq(1900,2015,10))
 ```
 
 
